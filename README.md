@@ -8,6 +8,8 @@ for fluid movement in ATAK at a given speed.
 ## Example
 
 ```
+from ftssim import gpx
+
 player = gpx.GpxPlayer('192.168.3.2', 'test_file.gpx', "A1_Walk", speed_kph=5, max_time_step_secs=4)
 player.play_gpx()
 ```
