@@ -14,3 +14,6 @@ player = gpx.GpxPlayer('192.168.3.2', 'test_file.gpx', "A1_Walk", speed_kph=5, m
 player.play_gpx()
 ```
 Refer to test.py for an example of playing multiple routes back at the same time
+
+
+For en example, go [here]("https://github.com/lennisthemenace/FreeTAKServer-Simulator-UI-Example")
