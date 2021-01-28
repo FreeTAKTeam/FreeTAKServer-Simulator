@@ -16,4 +16,4 @@ player.play_gpx()
 Refer to test.py for an example of playing multiple routes back at the same time
 
 
-For en example, go [here]("https://github.com/lennisthemenace/FreeTAKServer-Simulator-UI-Example")
+For en example, go [here](https://github.com/lennisthemenace/FreeTAKServer-Simulator-UI-Example)
