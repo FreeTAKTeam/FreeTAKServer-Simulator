@@ -2,11 +2,12 @@ import gpxpy.gpx
 import uuid
 from typing import Tuple
 from ftssim import _common
+from threading import Thread
 
 
 class GpxPlayer:
     def __init__(self, tak_server: str, filename: str, callsign: str, tak_port: int = 8087, speed_kph: int = 5,
-                 max_time_step_secs: int = 4, cot_type: str = "a-f-G-U-C"):
+                 max_time_step_secs: int = 4, cot_type: str = "a-f-G-U-C", repeated_objects: int = 1):
         """
         Constructs all the necessary attributes for the gpx object.
 
@@ -35,6 +36,7 @@ class GpxPlayer:
         self.cot_type = cot_type
         self.speed_kph = speed_kph
         self.max_time_step_secs = max_time_step_secs
+        self.repeated_objects = repeated_objects
         self.uid = str(uuid.uuid4())
 
     def _generate_steps_from_gpx(self) -> Tuple[list, list]:
@@ -61,3 +63,16 @@ class GpxPlayer:
         """
         points, waits = self._generate_steps_from_gpx()
         _common.iterate_and_send(points, waits, self.tak_server, self.tak_port, self.cot_type, self.callsign, self.uid)
+
+    def play_gpx_multiple(self) -> None:
+        """
+        Start playing the gpx file into tak, one per object specified
+        """
+        points, waits = self._generate_steps_from_gpx()
+        pos = 0
+        while pos < self.repeated_objects:
+            new_points = _common.offset_route(points, 0.005)
+            t2 = Thread(target=_common.iterate_wrapper(new_points, waits, self.tak_server, self.tak_port, self.cot_type,
+                                                       self.callsign + "_" + str(pos), str(uuid.uuid4())))
+            t2.start()
+            pos += 1

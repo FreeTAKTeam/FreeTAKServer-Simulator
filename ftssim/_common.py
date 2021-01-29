@@ -1,12 +1,12 @@
 import geopy.distance
-from typing import Tuple
+from typing import Tuple, Callable
 from takpak.takcot import takcot
 from takpak.mkcot import mkcot
 import random
 import time
 
 
-def move_from_location(lat: float, lon: float, distance_km: int, bearing: float) -> Tuple[float, float]:
+def move_from_location(lat: float, lon: float, distance_km: float, bearing: float) -> Tuple[float, float]:
     """
     Get the coordinates at a given distance away in a set bearing
 
@@ -16,7 +16,7 @@ def move_from_location(lat: float, lon: float, distance_km: int, bearing: float)
             starting latitude
         lon : float
             starting latitude
-        distance_km : int
+        distance_km : float
             distance to move in kilometers (1 and above)
         bearing : float
             the bearing to head in (0-360)
@@ -33,7 +33,7 @@ def move_from_location(lat: float, lon: float, distance_km: int, bearing: float)
     return end_point.latitude, end_point.longitude
 
 
-def move_from_location_in_random_direction(lat: float, lon: float, distance_km: int) -> Tuple[float, float]:
+def move_from_location_in_random_direction(lat: float, lon: float, distance_km: float) -> Tuple[float, float]:
     """
     Get the coordinates at a given distance away in a random bearing
 
@@ -43,7 +43,7 @@ def move_from_location_in_random_direction(lat: float, lon: float, distance_km: 
             starting latitude
         lon : float
             starting latitude
-        distance_km : int
+        distance_km : float
             distance to move in kilometers (1 and above)
 
     Returns
@@ -157,3 +157,61 @@ def iterate_and_send(points: list, waits: list, tak_server: str, tak_port: int, 
             break
         locator += 1
     takserver.close()
+
+
+def offset_route(points: list, distance_km: float) -> list:
+    """
+    Iterates through list of coordinate points and wait times and sends them to a TAKServer
+
+    Parameters
+    ----------
+        points : list
+            list of coordinate points
+        distance_km : float
+            distance in km to offset a route by
+
+    Returns
+    -------
+        List
+
+    """
+    new_points = []
+    bearing = round(random.uniform(0, 360), 1)
+    pnt = 0
+    for point in points:
+        new_lat, new_lon = move_from_location(point[0], point[1], distance_km, bearing)
+        new_points.insert(pnt, (new_lat, new_lon))
+        pnt += 1
+    return new_points
+
+
+def iterate_wrapper(points, waits, tak_server, tak_port, cot_type, callsign, uid) -> Callable:
+    """
+    Iterates through list of coordinate points and wait times and sends them to a TAKServer
+
+    Parameters
+    ----------
+        points : list
+            list of coordinate points
+        waits : list
+            list of times in seconds to wait between locations
+        tak_server : str
+            the address of the target TAKServer
+        tak_port : int
+            the port for the target TAKServer
+        cot_type : str
+            cot type string e.g a-f-G-U-C
+        callsign : str
+            the callsign of the object
+        uid : str
+            the uid for the object
+
+
+    Returns
+    -------
+        Callable
+
+    """
+    def wrapper():
+        iterate_and_send(points, waits, tak_server, tak_port, cot_type, callsign, uid)
+    return wrapper
