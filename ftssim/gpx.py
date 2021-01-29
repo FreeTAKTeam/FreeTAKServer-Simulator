@@ -1,10 +1,7 @@
 import gpxpy.gpx
-import geopy.distance
-import time
-from takpak.takcot import takcot
-from takpak.mkcot import mkcot
 import uuid
 from typing import Tuple
+from ftssim import _common
 
 
 class GpxPlayer:
@@ -38,34 +35,9 @@ class GpxPlayer:
         self.cot_type = cot_type
         self.speed_kph = speed_kph
         self.max_time_step_secs = max_time_step_secs
-        self.uid = uuid.uuid4()
+        self.uid = str(uuid.uuid4())
 
-    @staticmethod
-    def _get_midway_coords(lat1: float, lon1: float, lat2: float, lon2: float) -> Tuple[float, float]:
-        """
-        Get the coordinates half way between to coordinates
-
-        Parameters
-        ----------
-            lat1 : float
-                first latitude
-            lat2 : float
-                second latitude
-            lon1 : float
-                first longitude
-            lon2 : float
-                second longitude
-
-        Returns
-        -------
-            Tuple[float, float]
-
-        """
-        midlat = (lat1 + lat2) / 2
-        midlong = (lon1 + lon2) / 2
-        return midlat, midlong
-
-    def _generate_steps(self) -> Tuple[list, list]:
+    def _generate_steps_from_gpx(self) -> Tuple[list, list]:
         """
          Ingest the gpx file and create the lists of coordinates and time needed to wait between each
          point for the given speed
@@ -81,40 +53,11 @@ class GpxPlayer:
             for segment in track.segments:
                 for point in segment.points:
                     points.append((point.latitude, point.longitude))
-        waits = []
-        pnt = 0
-        while pnt < len(points) - 1:
-            pnt_1 = pnt + 1
-            dst = geopy.distance.distance(points[pnt], points[pnt_1]).km
-            time_seconds = (dst / self.speed_kph) * 60 * 60
-            if time_seconds > self.max_time_step_secs:
-                points.insert(pnt_1, self._get_midway_coords(points[pnt][0], points[pnt][1], points[pnt_1][0], points[pnt_1][1]))
-            else:
-                waits.insert(pnt, time_seconds)
-                pnt += 1
-        return points, waits
+        return _common.generate_smooth_route(points, self.speed_kph, self.max_time_step_secs)
 
     def play_gpx(self) -> None:
         """
         Start playing the gpx file into tak
         """
-        takserver = takcot()
-        takserver.open(self.tak_server, self.tak_port)
-        points, waits = self._generate_steps()
-        locator = 0
-        takserver.flush()
-        for location in points:
-            takserver.send(mkcot.mkcot(cot_identity="friend",
-                                       cot_stale=1,
-                                       cot_dimension="land-unit",
-                                       cot_typesuffix=str(self.cot_type),
-                                       cot_callsign=str(self.callsign),
-                                       cot_id=str(self.uid),
-                                       cot_lat=round(location[0], 5), cot_lon=round(location[1], 5)))
-            takserver.flush()
-            try:
-                time.sleep(waits[locator])
-            except(IndexError):
-                continue
-            locator += 1
-        takserver.close()
+        points, waits = self._generate_steps_from_gpx()
+        _common.iterate_and_send(points, waits, self.tak_server, self.tak_port, self.cot_type, self.callsign, self.uid)
