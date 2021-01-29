@@ -30,4 +30,4 @@ wanderer = wander.Wander('192.168.3.2', total_distance_km=2, distance_between_ch
 Refer to gpx_example.py and wander_example.py for examples of running concurrently 
 
 
-For en example, go [here](https://github.com/lennisthemenace/FreeTAKServer-Simulator-UI-Example)
+For an example, go [here](https://github.com/lennisthemenace/FreeTAKServer-Simulator-UI-Example)
