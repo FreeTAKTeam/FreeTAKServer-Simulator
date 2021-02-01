@@ -117,7 +117,8 @@ def generate_smooth_route(points: list, speed_kph: int, max_time_step_secs: int)
     return points, waits
 
 
-def iterate_and_send(points: list, waits: list, tak_server: str, tak_port: int, cot_type: str, callsign: str, uid: str):
+def iterate_and_send(points: list, waits: list, tak_server: str, tak_port: int, cot_type: str,
+                     callsign: str, uid: str, cot_identity: str, cot_dimension: str, cot_stale: int):
     """
     Iterates through list of coordinate points and wait times and sends them to a TAKServer
 
@@ -133,6 +134,12 @@ def iterate_and_send(points: list, waits: list, tak_server: str, tak_port: int, 
             the port for the target TAKServer
         cot_type : str
             cot type string e.g a-f-G-U-C
+        cot_identity : str
+            Cot identity e.g friend
+        cot_dimension : str
+            Cot dimension e.g land-unit
+        cot_stale : int
+            Time in minuets for the object to become stale in ATAK
         callsign : str
             the callsign of the object
         uid : str
@@ -143,9 +150,9 @@ def iterate_and_send(points: list, waits: list, tak_server: str, tak_port: int, 
     locator = 0
     takserver.flush()
     for location in points:
-        takserver.send(mkcot.mkcot(cot_identity="friend",
-                                   cot_stale=1,
-                                   cot_dimension="land-unit",
+        takserver.send(mkcot.mkcot(cot_identity=str(cot_identity),
+                                   cot_stale=int(cot_stale),
+                                   cot_dimension=str(cot_dimension),
                                    cot_typesuffix=str(cot_type),
                                    cot_callsign=str(callsign),
                                    cot_id=str(uid),
@@ -185,7 +192,8 @@ def offset_route(points: list, distance_km: float) -> list:
     return new_points
 
 
-def iterate_wrapper(points, waits, tak_server, tak_port, cot_type, callsign, uid) -> Callable:
+def iterate_wrapper(points, waits, tak_server, tak_port, cot_type, callsign, uid, cot_identity, cot_dimension,
+                         cot_stale) -> Callable:
     """
     Iterates through list of coordinate points and wait times and sends them to a TAKServer
 
@@ -205,6 +213,12 @@ def iterate_wrapper(points, waits, tak_server, tak_port, cot_type, callsign, uid
             the callsign of the object
         uid : str
             the uid for the object
+        cot_identity : str
+            Cot identity e.g friend
+        cot_dimension : str
+            Cot dimension e.g land-unit
+        cot_stale : int
+            Time in minuets for the object to become stale in ATAK
 
 
     Returns
@@ -213,5 +227,6 @@ def iterate_wrapper(points, waits, tak_server, tak_port, cot_type, callsign, uid
 
     """
     def wrapper():
-        iterate_and_send(points, waits, tak_server, tak_port, cot_type, callsign, uid)
+        iterate_and_send(points, waits, tak_server, tak_port, cot_type, callsign, uid, cot_identity, cot_dimension,
+                         cot_stale)
     return wrapper

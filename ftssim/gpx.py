@@ -7,7 +7,8 @@ from threading import Thread
 
 class GpxPlayer:
     def __init__(self, tak_server: str, filename: str, callsign: str, tak_port: int = 8087, speed_kph: int = 5,
-                 max_time_step_secs: int = 4, cot_type: str = "a-f-G-U-C", repeated_objects: int = 1):
+                 max_time_step_secs: int = 4, cot_identity: str = "friend", cot_dimension: str = "land-unit",
+                 cot_stale: int = 1, cot_type: str = "a-f-G-U-C", repeated_objects: int = 1):
         """
         Constructs all the necessary attributes for the gpx object.
 
@@ -26,13 +27,24 @@ class GpxPlayer:
             max_time_step_secs : int
                 max time in seconds allows for a gap between CoT messages (the smaller the number the more
                 fluid the movement)
+            cot_identity : str
+                Cot identity e.g friend
+            cot_dimension : str
+                Cot dimension e.g land-unit
+            cot_stale : int
+                Time in minuets for the object to become stale in ATAK
             cot_type : str
                 CoT identifier string to use
+            repeated_objects : int
+                Number of repeated objects to create (mimicking a group)
         """
         self.filename = filename
         self.callsign = callsign
         self.tak_port = tak_port
         self.tak_server = tak_server
+        self.cot_identity = cot_identity
+        self.cot_dimension = cot_dimension
+        self.cot_stale = cot_stale
         self.cot_type = cot_type
         self.speed_kph = speed_kph
         self.max_time_step_secs = max_time_step_secs
@@ -62,17 +74,25 @@ class GpxPlayer:
         Start playing the gpx file into tak
         """
         points, waits = self._generate_steps_from_gpx()
-        _common.iterate_and_send(points, waits, self.tak_server, self.tak_port, self.cot_type, self.callsign, self.uid)
+        _common.iterate_and_send(points, waits, self.tak_server, self.tak_port, self.cot_type, self.callsign, self.uid,
+                                 self.cot_identity, self.cot_dimension, self.cot_stale)
 
-    def play_gpx_multiple(self) -> None:
+    def play_gpx_multiple(self, offset: float = 5) -> None:
         """
         Start playing the gpx file into tak, one per object specified
+
+         Parameters
+        ----------
+            offset : float
+                number of meters to offset each object (in a random direction)
         """
         points, waits = self._generate_steps_from_gpx()
         pos = 0
         while pos < self.repeated_objects:
-            new_points = _common.offset_route(points, 0.005)
-            t2 = Thread(target=_common.iterate_wrapper(new_points, waits, self.tak_server, self.tak_port, self.cot_type,
-                                                       self.callsign + "_" + str(pos), str(uuid.uuid4())))
-            t2.start()
+            new_points = _common.offset_route(points, (offset / 1000))
+            gpx_thread = Thread(
+                target=_common.iterate_wrapper(new_points, waits, self.tak_server, self.tak_port, self.cot_type,
+                                               self.callsign + "_" + str(pos), str(uuid.uuid4()),
+                                               self.cot_identity, self.cot_dimension, self.cot_stale))
+            gpx_thread.start()
             pos += 1

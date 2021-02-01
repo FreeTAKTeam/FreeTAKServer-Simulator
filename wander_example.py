@@ -21,7 +21,7 @@ def print_info(wnd, thread):
     + {wnd.callsign} is Running + 
     + Process ID: {thread.native_id} + 
     + UID: {wnd.uid} + 
-    + Server: {wnd.tak_server} + 
+    + Server: {wnd.tak_server}:{wnd.tak_port} + 
     + Total Distance: {wnd.total_distance_km}Km +  
     + Distance Between Direction Change: {wnd.distance_between_change}Km + 
     + Speed: {wnd.speed_kph}Kph + 
