@@ -1,4 +1,5 @@
 import uuid
+import time
 from ftssim import _common
 
 
@@ -68,6 +69,67 @@ class Wander:
                                                                                 self.distance_between_change)
             points.insert(km_count + 1, (next_lat, next_lon))
             km_count += self.distance_between_change
+        points, waits = _common.generate_smooth_route(points, self.speed_kph, self.max_time_step_secs)
+        _common.iterate_and_send(points, waits, self.tak_server, self.tak_port, self.cot_type, self.callsign, self.uid,
+                                 self.cot_identity, self.cot_dimension, self.cot_stale)
+
+    def loiter_for_time(self, loiter_time_secs: int) -> None:
+        """
+        Loiter in the area
+
+        Parameters
+        ----------
+            loiter_time_secs : int
+                Time in seconds for object to loiter in area
+        """
+        centre_lat = self.lat
+        centre_lon = self.lon
+        points = []
+        waits = []
+        num_points = loiter_time_secs / self.max_time_step_secs
+        point_counter = 0
+        while point_counter < num_points:
+            points.insert(point_counter, (centre_lat, centre_lon))
+            waits.insert(point_counter, self.max_time_step_secs)
+
+            next_lat, next_lon = _common.move_from_location_in_random_direction(centre_lat, centre_lon, 0.005)
+            points.insert(point_counter + 1, (next_lat, next_lon))
+            waits.insert(point_counter + 1, self.max_time_step_secs)
+
+            point_counter += 2
+
+        _common.iterate_and_send(points, waits, self.tak_server, self.tak_port, self.cot_type, self.callsign, self.uid,
+                                 self.cot_identity, self.cot_dimension, self.cot_stale)
+
+    def circle_point(self, radius: int, clockwise: bool = True) -> None:
+        """
+        Loiter in the area
+
+        Parameters
+        ----------
+            radius : int
+                Radius in Meters from starting point to circle
+            clockwise : bool
+                Bool value to denote direction (default is clockwise)
+        """
+        centre_lat = self.lat
+        centre_lon = self.lon
+        points = []
+        point_counter = 0
+        clock_bearing = 0
+        anti_clock_bearing = 359
+        if clockwise:
+            while clock_bearing <= 359:
+                next_lat, next_lon = _common.move_from_location(centre_lat, centre_lon, (radius/1000), clock_bearing)
+                points.insert(point_counter, (next_lat, next_lon))
+                clock_bearing += 9.9
+                point_counter += 1
+        else:
+            while anti_clock_bearing >= 0:
+                next_lat, next_lon = _common.move_from_location(centre_lat, centre_lon, (radius/1000), anti_clock_bearing)
+                points.insert(point_counter, (next_lat, next_lon))
+                anti_clock_bearing -= 9.9
+                point_counter += 1
         points, waits = _common.generate_smooth_route(points, self.speed_kph, self.max_time_step_secs)
         _common.iterate_and_send(points, waits, self.tak_server, self.tak_port, self.cot_type, self.callsign, self.uid,
                                  self.cot_identity, self.cot_dimension, self.cot_stale)

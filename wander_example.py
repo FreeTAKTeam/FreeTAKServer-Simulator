@@ -31,3 +31,9 @@ def print_info(wnd, thread):
 # Print out to the terminal useful information about wanderer
 print_info(wanderer, wanderer_tread)
 print_info(wanderer1, wanderer1_thread)
+
+# Loiter in an the area for 5 minutes
+wanderer1.loiter_for_time(300)
+
+# Circle anti-clockwise around the point in a 50 meter radius
+wanderer1.circle_point(50, clockwise=False)
